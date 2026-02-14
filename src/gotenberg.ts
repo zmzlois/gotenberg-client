@@ -1,4 +1,4 @@
-import { createGotenbergClient } from "./client";
+import { GotenbergRequestClient } from "./client";
 import type {
   ConvertHtmlInput,
   ConvertMarkdownInput,
@@ -8,6 +8,7 @@ import type {
   EmbedFilesInput,
   EncryptPdfInput,
   FlattenPdfInput,
+  GotenbergClientOptions,
   GotenbergClient,
   GotenbergError,
   GotenbergLogger,
@@ -30,8 +31,12 @@ const requireEnv = (name: string): string => {
   return value;
 };
 
-export class Gotenberg {
-  private readonly client: GotenbergClient;
+/**
+ * Public client API. Instantiate with `new Gotenberg()` and the required
+ * env vars: GOTENBERG_URL, GOTENBERG_API_BASIC_AUTH_USERNAME,
+ * GOTENBERG_API_BASIC_AUTH_PASSWORD.
+ */
+export class Gotenberg extends GotenbergRequestClient {
   private readonly logger?: GotenbergLogger;
 
   /**
@@ -41,15 +46,16 @@ export class Gotenberg {
    * - GOTENBERG_API_BASIC_AUTH_PASSWORD (required)
    */
   constructor(options?: GotenbergOptions) {
-    this.client = createGotenbergClient({
+    const clientOptions: GotenbergClientOptions = {
       baseUrl: requireEnv("GOTENBERG_URL"),
       basicAuth: {
         username: requireEnv("GOTENBERG_API_BASIC_AUTH_USERNAME"),
         password: requireEnv("GOTENBERG_API_BASIC_AUTH_PASSWORD"),
       },
       limiter: options?.limiter,
-    });
+    };
 
+    super(clientOptions);
     this.logger = options?.logger;
   }
 
@@ -65,123 +71,124 @@ export class Gotenberg {
     }
   }
 
-  async health(signal?: AbortSignal) {
-    const result = await this.client.health(signal);
-    this.logIfError("health", result);
+  private async withErrorLogging<T>(
+    method: string,
+    request: () => Promise<Result<T, GotenbergError>>,
+  ): Promise<Result<T, GotenbergError>> {
+    const result = await request();
+    this.logIfError(method, result);
     return result;
   }
 
-  async version(signal?: AbortSignal): Promise<Result<string, GotenbergError>> {
-    const result = await this.client.version(signal);
-    this.logIfError("version", result);
-    return result;
+  override async health(signal?: AbortSignal): ReturnType<GotenbergClient["health"]> {
+    return this.withErrorLogging("health", () => super.health(signal));
   }
 
-  async urlToPdf(input: ConvertUrlInput) {
-    const result = await this.client.convertUrl(input);
-    this.logIfError("urlToPdf", result);
-    return result;
+  override async version(signal?: AbortSignal): ReturnType<GotenbergClient["version"]> {
+    return this.withErrorLogging("version", () => super.version(signal));
   }
 
-  async htmlToPdf(input: ConvertHtmlInput) {
-    const result = await this.client.convertHtml(input);
-    this.logIfError("htmlToPdf", result);
-    return result;
+  override async urlToPdf(input: ConvertUrlInput): ReturnType<GotenbergClient["convertUrl"]> {
+    return this.withErrorLogging("urlToPdf", () => super.convertUrl(input));
   }
 
-  async markdownToPdf(input: ConvertMarkdownInput) {
-    const result = await this.client.convertMarkdown(input);
-    this.logIfError("markdownToPdf", result);
-    return result;
+  override async htmlToPdf(input: ConvertHtmlInput): ReturnType<GotenbergClient["convertHtml"]> {
+    return this.withErrorLogging("htmlToPdf", () => super.convertHtml(input));
   }
 
-  async screenshotUrl(input: ScreenshotUrlInput) {
-    const result = await this.client.screenshotUrl(input);
-    this.logIfError("screenshotUrl", result);
-    return result;
+  override async markdownToPdf(
+    input: ConvertMarkdownInput,
+  ): ReturnType<GotenbergClient["convertMarkdown"]> {
+    return this.withErrorLogging("markdownToPdf", () => super.convertMarkdown(input));
   }
 
-  async screenshotHtml(input: ScreenshotHtmlInput) {
-    const result = await this.client.screenshotHtml(input);
-    this.logIfError("screenshotHtml", result);
-    return result;
+  override async screenshotUrl(
+    input: ScreenshotUrlInput,
+  ): ReturnType<GotenbergClient["screenshotUrl"]> {
+    return this.withErrorLogging("screenshotUrl", () => super.screenshotUrl(input));
   }
 
-  async screenshotMarkdown(input: ScreenshotMarkdownInput) {
-    const result = await this.client.screenshotMarkdown(input);
-    this.logIfError("screenshotMarkdown", result);
-    return result;
+  override async screenshotHtml(
+    input: ScreenshotHtmlInput,
+  ): ReturnType<GotenbergClient["screenshotHtml"]> {
+    return this.withErrorLogging("screenshotHtml", () =>
+      super.screenshotHtml(input),
+    );
   }
 
-  async pdfToImage(input: ScreenshotUrlInput) {
-    const result = await this.client.screenshotUrl(input);
-    this.logIfError("pdfToImage", result);
-    return result;
+  override async screenshotMarkdown(
+    input: ScreenshotMarkdownInput,
+  ): ReturnType<GotenbergClient["screenshotMarkdown"]> {
+    return this.withErrorLogging("screenshotMarkdown", () =>
+      super.screenshotMarkdown(input),
+    );
   }
 
-  async officeToPdf(input: ConvertOfficeInput) {
-    const result = await this.client.convertOffice(input);
-    this.logIfError("officeToPdf", result);
-    return result;
+  override async pdfToImage(
+    input: ScreenshotUrlInput,
+  ): ReturnType<GotenbergClient["screenshotUrl"]> {
+    return this.withErrorLogging("pdfToImage", () => super.screenshotUrl(input));
   }
 
-  async excelToPdf(input: ConvertOfficeInput) {
-    const result = await this.client.convertOffice(input);
-    this.logIfError("excelToPdf", result);
-    return result;
+  override async officeToPdf(
+    input: ConvertOfficeInput,
+  ): ReturnType<GotenbergClient["convertOffice"]> {
+    return this.withErrorLogging("officeToPdf", () => super.convertOffice(input));
   }
 
-  async wordToPdf(input: ConvertOfficeInput) {
-    const result = await this.client.convertOffice(input);
-    this.logIfError("wordToPdf", result);
-    return result;
+  override async excelToPdf(
+    input: ConvertOfficeInput,
+  ): ReturnType<GotenbergClient["convertOffice"]> {
+    return this.withErrorLogging("excelToPdf", () => super.convertOffice(input));
   }
 
-  async mergePdf(input: MergePdfInput) {
-    const result = await this.client.mergePdf(input);
-    this.logIfError("mergePdf", result);
-    return result;
+  override async wordToPdf(
+    input: ConvertOfficeInput,
+  ): ReturnType<GotenbergClient["convertOffice"]> {
+    return this.withErrorLogging("wordToPdf", () => super.convertOffice(input));
   }
 
-  async splitPdf(input: SplitPdfInput) {
-    const result = await this.client.splitPdf(input);
-    this.logIfError("splitPdf", result);
-    return result;
+  override async mergePdf(input: MergePdfInput): ReturnType<GotenbergClient["mergePdf"]> {
+    return this.withErrorLogging("mergePdf", () => super.mergePdf(input));
   }
 
-  async flattenPdf(input: FlattenPdfInput) {
-    const result = await this.client.flattenPdf(input);
-    this.logIfError("flattenPdf", result);
-    return result;
+  override async splitPdf(input: SplitPdfInput): ReturnType<GotenbergClient["splitPdf"]> {
+    return this.withErrorLogging("splitPdf", () => super.splitPdf(input));
   }
 
-  async encryptPdf(input: EncryptPdfInput) {
-    const result = await this.client.encryptPdf(input);
-    this.logIfError("encryptPdf", result);
-    return result;
+  override async flattenPdf(
+    input: FlattenPdfInput,
+  ): ReturnType<GotenbergClient["flattenPdf"]> {
+    return this.withErrorLogging("flattenPdf", () => super.flattenPdf(input));
   }
 
-  async embedFiles(input: EmbedFilesInput) {
-    const result = await this.client.embedFiles(input);
-    this.logIfError("embedFiles", result);
-    return result;
+  override async encryptPdf(
+    input: EncryptPdfInput,
+  ): ReturnType<GotenbergClient["encryptPdf"]> {
+    return this.withErrorLogging("encryptPdf", () => super.encryptPdf(input));
   }
 
-  async readMetadata(input: ReadMetadataInput) {
-    const result = await this.client.readMetadata(input);
-    this.logIfError("readMetadata", result);
-    return result;
+  override async embedFiles(
+    input: EmbedFilesInput,
+  ): ReturnType<GotenbergClient["embedFiles"]> {
+    return this.withErrorLogging("embedFiles", () => super.embedFiles(input));
   }
 
-  async writeMetadata(input: WriteMetadataInput) {
-    const result = await this.client.writeMetadata(input);
-    this.logIfError("writeMetadata", result);
-    return result;
+  override async readMetadata(
+    input: ReadMetadataInput,
+  ): ReturnType<GotenbergClient["readMetadata"]> {
+    return this.withErrorLogging("readMetadata", () => super.readMetadata(input));
   }
 
-  async convertToPdfa(input: ConvertToPdfaInput) {
-    const result = await this.client.convertToPdfa(input);
-    this.logIfError("convertToPdfa", result);
-    return result;
+  override async writeMetadata(
+    input: WriteMetadataInput,
+  ): ReturnType<GotenbergClient["writeMetadata"]> {
+    return this.withErrorLogging("writeMetadata", () => super.writeMetadata(input));
+  }
+
+  override async convertToPdfa(
+    input: ConvertToPdfaInput,
+  ): ReturnType<GotenbergClient["convertToPdfa"]> {
+    return this.withErrorLogging("convertToPdfa", () => super.convertToPdfa(input));
   }
 }

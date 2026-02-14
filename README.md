@@ -1,239 +1,289 @@
 # gotenberg-client
 
-Tiny, typed client for [Gotenberg](https://gotenberg.dev/) with two entry styles:
-- **Factory API** (`createGotenbergClient`) for explicit, DI-friendly usage
-- **Class API** (`new Gotenberg()`) for environment-driven configuration
+Typed, promise-based wrapper for [Gotenberg](https://gotenberg.dev/) with a single public class: `Gotenberg`.
 
+- Minimal surface: one entrypoint, one initialization model.
+- Strong request typing built from shared interfaces in `src/types.ts`.
+- Every method returns `Result<T, GotenbergError>`.
 
 ## Install
-### npm 
+
 ```bash
-npm install gotenberg-client
+npm i gotenberg-client
 ```
-### pnpm 
+
 ```bash
-pnpm install gotenberg-client
+bun add gotenberg-client
 ```
-### Bun 
+
 ```bash
-bun install gotenberg-client
-```
-## Quick start
-
-Pass in required environment variables. See more options in [GotenbergClientOptions](./src/types.ts)
-```ts
-import { createGotenbergClient } from "gotenberg-client";
-
-const client = createGotenbergClient({
-  baseUrl: process.env.GOTENBERG_URL,
-  basicAuth: {
-    username: process.env.GOTENBERG_API_BASIC_AUTH_USERNAME,
-    password: process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD,
-  },
-});
-
-// Convert URL -> PDF
-const pdfResult = await client.convertUrl({
-  url: "https://example.com", // a remove storage file 
-  outputFilename: "example.pdf",
-  options: {
-    printBackground: true,
-    marginTop: "12mm",
-  },
-});
-
-if (!pdfResult.ok) {
-  throw new Error(`Conversion failed: ${pdfResult.error.message}`);
-}
-
-// Response includes content-type + filename + server trace metadata
-console.log(pdfResult.value.filename, pdfResult.value.contentType);
+pnpm add gotenberg-client
 ```
 
-Optionally you can also just make sure the environment variables exists within the environment and use the methods directly.
-```ts
-import { Gotenberg } from "gotenberg-client";
+## Prerequisites: environment variables
 
-// You can also use the class API that reads from env vars
-process.env.GOTENBERG_URL = "https://gotenberg.example.com";
-process.env.GOTENBERG_API_BASIC_AUTH_USERNAME = "basic-user";
-process.env.GOTENBERG_API_BASIC_AUTH_PASSWORD = "basic-password";
-
-const client = new Gotenberg();
-const htmlResult = await client.htmlToPdf({
-  indexHtml: "<html><body><h1>hello</h1></body></html>",
-  outputFilename: "hello.pdf",
-  options: { printBackground: true },
-});
-
-if (!htmlResult.ok) {
-  throw new Error(`Conversion failed: ${htmlResult.error.message}`);
-}
-```
-
-## Environment variables
-
-Required when using `new Gotenberg()`:
+`new Gotenberg()` reads required values from environment variables on construction:
 
 - `GOTENBERG_URL`
 - `GOTENBERG_API_BASIC_AUTH_USERNAME`
 - `GOTENBERG_API_BASIC_AUTH_PASSWORD`
 
-## File inputs
+If any are missing, constructor throws:
 
-You can pass `string`, `ArrayBuffer`, `Uint8Array`, or `Blob` per `GotenbergFile`:
+```text
+GOTENBERG_URL environment variable is required
+```
+
+## Initialization
+
+```ts
+import { Gotenberg } from "gotenberg-client";
+
+const gotenberg = new Gotenberg({
+  logger: {
+    error: (message, meta) => console.error(message, meta),
+    warn: (message, meta) => console.warn(message, meta),
+  },
+});
+```
+
+Optional logger and limiter are available via `GotenbergOptions`.
+
+## Shared input types
+
+Use `GotenbergFile` for any upload field:
 
 ```ts
 import type { GotenbergFile } from "gotenberg-client";
 
-const file: GotenbergFile = {
-  name: "contract.docx",
-  data: await Bun.file("contract.docx").arrayBuffer(),
+const index: GotenbergFile = {
+  name: "document.docx",
+  data: await Bun.file("document.docx").arrayBuffer(),
   contentType:
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 ```
 
-## API reference (factory API)
+## Response model
 
-The default export is `createGotenbergClient` from:
+Each method returns:
 
 ```ts
-import { createGotenbergClient } from "gotenberg-client";
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 ```
 
-Method coverage:
-
-- `health(signal?)` -> service status check
-- `version(signal?)` -> server version string
-- **Chromium → PDF**
-  - `convertUrl(input: ConvertUrlInput)`
-  - `convertHtml(input: ConvertHtmlInput)`
-  - `convertMarkdown(input: ConvertMarkdownInput)`
-- **Chromium → Image**
-  - `screenshotUrl(input: ScreenshotUrlInput)`
-  - `screenshotHtml(input: ScreenshotHtmlInput)`
-  - `screenshotMarkdown(input: ScreenshotMarkdownInput)`
-- **LibreOffice**
-  - `convertOffice(input: ConvertOfficeInput)`
-- **PDF engines**
-  - `mergePdf(input: MergePdfInput)`
-  - `splitPdf(input: SplitPdfInput)`
-  - `flattenPdf(input: FlattenPdfInput)`
-  - `encryptPdf(input: EncryptPdfInput)`
-  - `embedFiles(input: EmbedFilesInput)`
-  - `readMetadata(input: ReadMetadataInput)`
-  - `writeMetadata(input: WriteMetadataInput)`
-  - `convertToPdfa(input: ConvertToPdfaInput)`
-
-## API reference (class API)
-
-The class API is a thin wrapper around the same client contract and adds optional logger hooks:
+On success, binary methods return:
 
 ```ts
-import { Gotenberg } from "gotenberg-client";
-```
-
-Methods:
-
-- `health(signal?)`
-- `version(signal?)`
-- `urlToPdf(input: ConvertUrlInput)`
-- `htmlToPdf(input: ConvertHtmlInput)`
-- `markdownToPdf(input: ConvertMarkdownInput)`
-- `screenshotUrl(input: ScreenshotUrlInput)`
-- `screenshotHtml(input: ScreenshotHtmlInput)`
-- `screenshotMarkdown(input: ScreenshotMarkdownInput)`
-- `pdfToImage(input: ScreenshotUrlInput)` *(alias for `screenshotUrl`)*
-- `officeToPdf(input: ConvertOfficeInput)`
-- `excelToPdf(input: ConvertOfficeInput)`
-- `wordToPdf(input: ConvertOfficeInput)`
-- `mergePdf(input: MergePdfInput)`
-- `splitPdf(input: SplitPdfInput)`
-- `flattenPdf(input: FlattenPdfInput)`
-- `encryptPdf(input: EncryptPdfInput)`
-- `embedFiles(input: EmbedFilesInput)`
-- `readMetadata(input: ReadMetadataInput)`
-- `writeMetadata(input: WriteMetadataInput)`
-- `convertToPdfa(input: ConvertToPdfaInput)`
-
-## Example: upload + merge PDFs
-
-```ts
-import { createGotenbergClient } from "gotenberg-client";
-import type { GotenbergFile } from "gotenberg-client";
-
-const mergeInput = async (): Promise<GotenbergFile[]> => Promise.all([
-    Bun.file("a.pdf").arrayBuffer().then((data) => ({
-      name: "a.pdf",
-      data,
-      contentType: "application/pdf",
-    })),
-    Bun.file("b.pdf").arrayBuffer().then((data) => ({
-      name: "b.pdf",
-      data,
-      contentType: "application/pdf",
-    })),
-  ]);
-
-const client = createGotenbergClient({
-  baseUrl: "https://gotenberg.example.com",
-  basicAuth: { username: "u", password: "p" },
-});
-
-const files = await mergeInput();
-const merged = await client.mergePdf({
-  files,
-  outputFilename: "merged.pdf",
-  options: { pdfa: "PDF/A-2b" },
-});
-
-if (!merged.ok) {
-  throw new Error(merged.error.message);
+{
+  blob: Blob;
+  filename: string | null;
+  contentType: string | null;
+  trace: string | null;
 }
-
-// Persist the output if needed
-await Bun.write("merged.pdf", merged.value.blob);
 ```
 
+On failure, inspect `error.type` (`config`, `network`, `http`, `invalid-response`).
+
+## Health and version
+
+### `health(signal?)`
+
+```ts
+const result = await gotenberg.health();
+if (result.ok) {
+  console.log(result.value.status); // "up" | "down"
+}
+```
+
+### `version(signal?)`
+
+```ts
+const result = await gotenberg.version();
+if (result.ok) {
+  console.log("Gotenberg:", result.value);
+}
+```
+
+## Chromium → PDF
+
+### `urlToPdf(input: ConvertUrlInput)`
+
+```ts
+const result = await gotenberg.urlToPdf({
+  url: "https://example.com",
+  options: { printBackground: true },
+});
+```
+
+### `htmlToPdf(input: ConvertHtmlInput)`
+
+```ts
+const result = await gotenberg.htmlToPdf({
+  indexHtml: "<html><body>hello</body></html>",
+  options: { singlePage: true },
+});
+```
+
+### `markdownToPdf(input: ConvertMarkdownInput)`
+
+```ts
+const result = await gotenberg.markdownToPdf({
+  indexHtml: { name: "index.md", data: "# notes", contentType: "text/markdown" },
+  markdownFiles: [
+    { name: "appendix.md", data: "# appendix", contentType: "text/markdown" },
+  ],
+});
+```
+
+## Chromium → image
+
+### `screenshotUrl(input: ScreenshotUrlInput)`
+
+```ts
+const result = await gotenberg.screenshotUrl({
+  url: "https://example.com",
+  options: { format: "png", width: 1280, height: 720 },
+});
+```
+
+### `screenshotHtml(input: ScreenshotHtmlInput)`
+
+```ts
+const result = await gotenberg.screenshotHtml({
+  indexHtml: "<html><body>visual diff</body></html>",
+  options: { format: "webp", optimizeForSpeed: true },
+});
+```
+
+### `screenshotMarkdown(input: ScreenshotMarkdownInput)`
+
+```ts
+const result = await gotenberg.screenshotMarkdown({
+  indexHtml: { name: "index.md", data: "# screenshot", contentType: "text/markdown" },
+  markdownFiles: [{ name: "notes.md", data: "# note", contentType: "text/markdown" }],
+});
+```
+
+### `pdfToImage(input: ScreenshotUrlInput)`
+
+Alias for URL screenshot flow for convenience:
+
+```ts
+const result = await gotenberg.pdfToImage({
+  url: "https://example.com/my.pdf",
+  options: { format: "png" },
+});
+```
+
+## LibreOffice
+
+### `officeToPdf(input: ConvertOfficeInput)`
+
+```ts
+const result = await gotenberg.officeToPdf({
+  files: [{ name: "report.docx", data: await Bun.file("report.docx").arrayBuffer() }],
+});
+```
+
+### `excelToPdf(input: ConvertOfficeInput)`
+
+```ts
+const result = await gotenberg.excelToPdf({ files: [/* ... */] });
+```
+
+### `wordToPdf(input: ConvertOfficeInput)`
+
+```ts
+const result = await gotenberg.wordToPdf({ files: [/* ... */] });
+```
+
+## PDF operations
+
+### `mergePdf(input: MergePdfInput)`
+
+```ts
+const result = await gotenberg.mergePdf({
+  files: [pdfA, pdfB],
+  outputFilename: "merged.pdf",
+});
+```
+
+### `splitPdf(input: SplitPdfInput)`
+
+```ts
+const result = await gotenberg.splitPdf({
+  files: [pdf],
+  splitMode: "pages",
+  splitSpan: "1",
+});
+```
+
+### `flattenPdf(input: FlattenPdfInput)`
+
+```ts
+const result = await gotenberg.flattenPdf({
+  files: [pdf],
+  outputFilename: "flattened.pdf",
+});
+```
+
+### `encryptPdf(input: EncryptPdfInput)`
+
+```ts
+const result = await gotenberg.encryptPdf({
+  files: [pdf],
+  userPassword: "owner-only",
+});
+```
+
+### `embedFiles(input: EmbedFilesInput)`
+
+```ts
+const result = await gotenberg.embedFiles({
+  files: [pdf],
+  embeds: [overlay],
+  outputFilename: "embedded.pdf",
+});
+```
+
+### `readMetadata(input: ReadMetadataInput)`
+
+```ts
+const result = await gotenberg.readMetadata({ files: [pdf] });
+if (result.ok) {
+  console.log(result.value);
+}
+```
+
+### `writeMetadata(input: WriteMetadataInput)`
+
+```ts
+const result = await gotenberg.writeMetadata({
+  files: [pdf],
+  metadata: { Title: "Quarterly Report", Author: "Ops Team" },
+});
+```
+
+### `convertToPdfa(input: ConvertToPdfaInput)`
+
+```ts
+const result = await gotenberg.convertToPdfa({
+  files: [pdf],
+  pdfa: "PDF/A-2b",
+  pdfua: true,
+});
+```
 
 ## Error handling
 
-All methods return `Result<T, GotenbergError>`:
-
-- `ok: true, value: T`
-- `ok: false, error: GotenbergError`
-
-Example:
-
 ```ts
-const result = await client.version();
+const result = await gotenberg.version();
 if (!result.ok) {
-  // Handle network/config/response issues consistently
-  console.error(result.error.type, result.error.message);
+  const error = result.error;
+  console.error(error.type, error.message, error.status, error.trace);
   return;
 }
 
-console.log("Gotenberg version:", result.value);
+console.log("ready");
 ```
-
-## Local development
-
-```bash
-bun install
-bun test
-bun run build
-bun run typecheck
-bun run format
-```
-
-## Publishing to npm (GitHub Actions)
-
-This package uses GitHub Actions with npm Trusted Publishing (OIDC):
-
-1. Configure OIDC/trusted publishing for this package in npm (`.github/workflows/publish.yml`).
-2. Bump version (`npm version patch|minor|major`) and push tag `v<version>`.
-3. CI runs: `bun test`, `bun run build`, then `npm publish --access public`.
-4. Manual release is supported using `workflow_dispatch` (when enabled in your workflow).
-
-The manual workflow is intentionally aligned with environment-based and tag-based release flows.
