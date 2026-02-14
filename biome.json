@@ -1,0 +1,19 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "files": {
+    "ignore": ["node_modules", "dist", "bun.lock", "test/fixtures/sample-pdf.pdf"]
+  },
+  "formatter": {
+    "lineWidth": 80
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingComma": "all",
+      "semicolons": "always"
+    }
+  },
+  "organizeImports": {
+    "enabled": true
+  }
+}
