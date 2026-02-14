@@ -130,7 +130,12 @@ const buildHeaders = (
       options.basicAuth.username,
       options.basicAuth.password,
     );
-    if (!encoded.ok) return encoded;
+    if (!encoded.ok) {
+      return {
+        ok: false,
+        error: encoded.error,
+      };
+    }
     headers.set("Authorization", `Basic ${encoded.value}`);
   }
 
@@ -204,7 +209,12 @@ const doFetch = async (
     input.trace,
     input.outputFilename,
   );
-  if (!headersResult.ok) return headersResult;
+  if (!headersResult.ok) {
+    return {
+      ok: false,
+      error: headersResult.error,
+    };
+  }
 
   const signal = withTimeoutSignal(input.signal, options.timeoutMs);
 
@@ -246,7 +256,12 @@ export const requestBinary = async (
   input: RequestInput,
 ): Promise<Result<GotenbergBinaryResponse, GotenbergError>> => {
   const fetchResult = await doFetch(options, input);
-  if (!fetchResult.ok) return fetchResult;
+  if (!fetchResult.ok) {
+    return {
+      ok: false,
+      error: fetchResult.error,
+    };
+  }
   return handleBinaryResponse(fetchResult.value);
 };
 
@@ -258,7 +273,12 @@ export const requestJson = async <T>(
     ...input,
     method: input.method ?? "GET",
   });
-  if (!fetchResult.ok) return fetchResult;
+  if (!fetchResult.ok) {
+    return {
+      ok: false,
+      error: fetchResult.error,
+    };
+  }
 
   const response = fetchResult.value;
   const trace = response.headers.get(TRACE_HEADER);
@@ -293,7 +313,12 @@ export const requestText = async (
     ...input,
     method: input.method ?? "GET",
   });
-  if (!fetchResult.ok) return fetchResult;
+  if (!fetchResult.ok) {
+    return {
+      ok: false,
+      error: fetchResult.error,
+    };
+  }
 
   const response = fetchResult.value;
 
