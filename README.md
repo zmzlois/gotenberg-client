@@ -6,6 +6,44 @@ Typed, promise-based wrapper for [Gotenberg](https://gotenberg.dev/) with a sing
 - Strong request typing built from shared interfaces in `src/types.ts`.
 - Every method returns `Result<T, GotenbergError>`.
 
+## Quick Links
+
+- [Install](#install)
+- [Prerequisites Environment Variables](#prerequisites-environment-variables)
+- [Initialization](#initialization)
+- [Where Can You Use This Package](#where-can-you-use-this-package)
+- [Shared Input Types](#shared-input-types)
+- [Response Model](#response-model)
+- [Health and Version](#health-and-version)
+- [Checking service health](#checking-service-health)
+- [Reading server version](#reading-server-version)
+- [Chromium to PDF](#chromium-to-pdf)
+- [Converting URL to PDF](#converting-url-to-pdf)
+- [Converting HTML to PDF](#converting-html-to-pdf)
+- [Converting Markdown to PDF](#converting-markdown-to-pdf)
+- [Chromium to Image](#chromium-to-image)
+- [Taking URL screenshots](#taking-url-screenshots)
+- [Taking HTML screenshots](#taking-html-screenshots)
+- [Taking Markdown screenshots](#taking-markdown-screenshots)
+- [Converting PDF to Images](#converting-pdf-to-images)
+- [LibreOffice](#libreoffice)
+- [Converting Office documents to PDF](#converting-office-documents-to-pdf)
+- [Converting Excel to PDF](#converting-excel-to-pdf)
+- [Converting Word to PDF](#converting-word-to-pdf)
+- [PDF Operations](#pdf-operations)
+- [Merging PDFs](#merging-pdfs)
+- [Splitting PDFs](#splitting-pdfs)
+- [Flattening PDFs](#flattening-pdfs)
+- [Encrypting PDFs](#encrypting-pdfs)
+- [Embedding files in PDFs](#embedding-files-in-pdfs)
+- [Reading PDF metadata](#reading-pdf-metadata)
+- [Writing PDF metadata](#writing-pdf-metadata)
+- [Converting to PDF/A](#converting-to-pdfa)
+- [Error Handling](#error-handling)
+- [Development](#development)
+- [CI Publish to npm](#ci-publish-to-npm)
+- [Deploy Your Own Gotenberg Server](#deploy-your-own-gotenberg-server)
+
 ## Install
 
 ```bash
@@ -20,7 +58,7 @@ bun add gotenberg-client
 pnpm add gotenberg-client
 ```
 
-## Prerequisites: environment variables
+## Prerequisites Environment Variables
 
 `new Gotenberg()` reads required values from environment variables on construction:
 
@@ -28,13 +66,10 @@ pnpm add gotenberg-client
 - `GOTENBERG_API_BASIC_AUTH_USERNAME`
 - `GOTENBERG_API_BASIC_AUTH_PASSWORD`
 
-If any are missing, constructor throws:
-
-```text
-GOTENBERG_URL environment variable is required
-```
+If any are missing, constructor will throw.
 
 ## Initialization
+
 
 ```ts
 import { Gotenberg } from "gotenberg-client";
@@ -49,7 +84,42 @@ const gotenberg = new Gotenberg({
 
 Optional logger and limiter are available via `GotenbergOptions`.
 
-## Shared input types
+## Where Can You Use This Package?
+
+This package is built for server-side runtime usage:
+
+- Node.js and Bun services
+- serverless functions (if Gotenberg endpoint is accessible)
+- background workers and CLI scripts
+- SSR handlers (for example, Next.js API routes, Nuxt server handlers)
+
+It is not intended for browser/client-side frontends because:
+
+- credentials are read from environment variables on the server
+- exposing shared secrets in a bundle is unsafe
+- CORS, auth, and network constraints are usually unsuitable for direct browser calls
+
+For browser products, call this package from your backend and expose a controlled API to the UI.
+
+### Compatibility Matrix
+
+| Runtime | Recommended minimum | `fetch` support | Compatibility notes |
+| --- | --- | --- | --- |
+| **Node.js** | `18+` | Built-in | Recommended runtime. Native `fetch`, `Blob`, `FormData`, `AbortController`, `Headers`, `Request`, and `Response` are available. |
+| **Node.js** | `16.x` (legacy) | Requires polyfill | Use `undici` (or equivalent) to provide global `fetch`, `Request`, `Response`, `Headers`, and streaming body support. |
+| **Bun** | `1.0+` | Built-in | Fully supported with current package APIs. |
+| **Cloudflare Workers / edge runtimes** | Runtime-dependent | Usually built-in | Possible but not officially tested. Ensure runtime provides `fetch` and stream-compatible multipart/form data behavior. |
+| **Browser** | — | Usually built-in | Not recommended for this package because credentials are environment-driven and intended for private/backend use. |
+
+### Runtime Requirements At A Glance
+
+- Works best in environments with modern web-fetch globals.
+- If global `fetch` is missing, provide a polyfill before constructing `new Gotenberg()`.
+- In browsers, avoid using env-based credentials directly; add a server proxy instead.
+
+## Shared Input Types
+
+Code: type definitions live in [`src/types.ts`](./src/types.ts).
 
 Use `GotenbergFile` for any upload field:
 
@@ -64,7 +134,7 @@ const index: GotenbergFile = {
 };
 ```
 
-## Response model
+## Response
 
 Each method returns:
 
@@ -85,10 +155,13 @@ On success, binary methods return:
 
 On failure, inspect `error.type` (`config`, `network`, `http`, `invalid-response`).
 
-## Health and version
+## Health and Version
 
-### `health(signal?)`
+### Checking service health
 
+#### `health(signal?)`
+
+Warm-starting worker pipelines or running readiness checks. Avoid sending expensive transformation jobs when Gotenberg server is down.
 ```ts
 const result = await gotenberg.health();
 if (result.ok) {
@@ -96,8 +169,11 @@ if (result.ok) {
 }
 ```
 
-### `version(signal?)`
+### Reading server version
 
+#### `version(signal?)`
+
+Validating server compatibility during deployment or in diagnostics. Helps with support and incident triage when output behavior changes across server versions.
 ```ts
 const result = await gotenberg.version();
 if (result.ok) {
@@ -105,9 +181,13 @@ if (result.ok) {
 }
 ```
 
-## Chromium → PDF
+## Chromium to PDF
 
-### `urlToPdf(input: ConvertUrlInput)`
+### Converting URL to PDF
+Gotenberg handles page loading, rendering, and output as PDF, removing browser automation work from your app.
+#### `urlToPdf(input: ConvertUrlInput)`
+
+Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `convertUrl` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.urlToPdf({
@@ -116,7 +196,13 @@ const result = await gotenberg.urlToPdf({
 });
 ```
 
-### `htmlToPdf(input: ConvertHtmlInput)`
+### Converting HTML to PDF
+
+You can generate HTML from templates in your application and need immediate PDF output and convert dynamic HTML directly without writing temporary files.
+
+#### `htmlToPdf(input: ConvertHtmlInput)`
+
+Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `convertHtml` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.htmlToPdf({
@@ -125,7 +211,9 @@ const result = await gotenberg.htmlToPdf({
 });
 ```
 
-### `markdownToPdf(input: ConvertMarkdownInput)`
+### Converting Markdown to PDF
+
+#### `markdownToPdf(input: ConvertMarkdownInput)`
 
 ```ts
 const result = await gotenberg.markdownToPdf({
@@ -136,9 +224,12 @@ const result = await gotenberg.markdownToPdf({
 });
 ```
 
-## Chromium → image
+## Chromium to Image
 
-### `screenshotUrl(input: ScreenshotUrlInput)`
+### Taking URL screenshots
+
+#### `screenshotUrl(input: ScreenshotUrlInput)`
+
 
 ```ts
 const result = await gotenberg.screenshotUrl({
@@ -147,7 +238,9 @@ const result = await gotenberg.screenshotUrl({
 });
 ```
 
-### `screenshotHtml(input: ScreenshotHtmlInput)`
+### Taking HTML screenshots
+
+#### `screenshotHtml(input: ScreenshotHtmlInput)`
 
 ```ts
 const result = await gotenberg.screenshotHtml({
@@ -156,7 +249,9 @@ const result = await gotenberg.screenshotHtml({
 });
 ```
 
-### `screenshotMarkdown(input: ScreenshotMarkdownInput)`
+### Taking Markdown screenshots
+
+#### `screenshotMarkdown(input: ScreenshotMarkdownInput)`
 
 ```ts
 const result = await gotenberg.screenshotMarkdown({
@@ -165,7 +260,11 @@ const result = await gotenberg.screenshotMarkdown({
 });
 ```
 
-### `pdfToImage(input: ScreenshotUrlInput)`
+
+### Converting PDF to Images
+
+#### `pdfToImage(input: ScreenshotUrlInput)`
+
 
 Alias for URL screenshot flow for convenience:
 
@@ -176,9 +275,12 @@ const result = await gotenberg.pdfToImage({
 });
 ```
 
+
 ## LibreOffice
 
-### `officeToPdf(input: ConvertOfficeInput)`
+### Converting Office documents to PDF
+
+#### `officeToPdf(input: ConvertOfficeInput)`
 
 ```ts
 const result = await gotenberg.officeToPdf({
@@ -186,21 +288,32 @@ const result = await gotenberg.officeToPdf({
 });
 ```
 
-### `excelToPdf(input: ConvertOfficeInput)`
+### Converting Excel to PDF
+
+#### `excelToPdf(input: ConvertOfficeInput)`
+
+Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), delegates to `convertOffice` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.excelToPdf({ files: [/* ... */] });
 ```
 
-### `wordToPdf(input: ConvertOfficeInput)`
+Use when: your workflow needs domain naming for spreadsheet processing.  
+Why: explicit naming improves readability and intent in business code.
+
+### Converting Word to PDF
+
+#### `wordToPdf(input: ConvertOfficeInput)`
 
 ```ts
 const result = await gotenberg.wordToPdf({ files: [/* ... */] });
 ```
 
-## PDF operations
+## PDF Operations
 
-### `mergePdf(input: MergePdfInput)`
+### Merging PDFs
+
+#### `mergePdf(input: MergePdfInput)`
 
 ```ts
 const result = await gotenberg.mergePdf({
@@ -209,7 +322,9 @@ const result = await gotenberg.mergePdf({
 });
 ```
 
-### `splitPdf(input: SplitPdfInput)`
+### Splitting PDFs
+
+#### `splitPdf(input: SplitPdfInput)`
 
 ```ts
 const result = await gotenberg.splitPdf({
@@ -219,7 +334,10 @@ const result = await gotenberg.splitPdf({
 });
 ```
 
-### `flattenPdf(input: FlattenPdfInput)`
+
+### Flattening PDFs
+
+#### `flattenPdf(input: FlattenPdfInput)`
 
 ```ts
 const result = await gotenberg.flattenPdf({
@@ -228,7 +346,11 @@ const result = await gotenberg.flattenPdf({
 });
 ```
 
-### `encryptPdf(input: EncryptPdfInput)`
+### Encrypting PDFs
+
+#### `encryptPdf(input: EncryptPdfInput)`
+
+Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `encryptPdf` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.encryptPdf({
@@ -237,7 +359,10 @@ const result = await gotenberg.encryptPdf({
 });
 ```
 
-### `embedFiles(input: EmbedFilesInput)`
+### Embedding files in PDFs
+
+#### `embedFiles(input: EmbedFilesInput)`
+
 
 ```ts
 const result = await gotenberg.embedFiles({
@@ -247,7 +372,11 @@ const result = await gotenberg.embedFiles({
 });
 ```
 
-### `readMetadata(input: ReadMetadataInput)`
+
+### Reading PDF metadata
+
+#### `readMetadata(input: ReadMetadataInput)`
+
 
 ```ts
 const result = await gotenberg.readMetadata({ files: [pdf] });
@@ -256,7 +385,11 @@ if (result.ok) {
 }
 ```
 
-### `writeMetadata(input: WriteMetadataInput)`
+
+### Writing PDF metadata
+
+#### `writeMetadata(input: WriteMetadataInput)`
+
 
 ```ts
 const result = await gotenberg.writeMetadata({
@@ -265,7 +398,11 @@ const result = await gotenberg.writeMetadata({
 });
 ```
 
-### `convertToPdfa(input: ConvertToPdfaInput)`
+
+### Converting to PDF/A
+
+#### `convertToPdfa(input: ConvertToPdfaInput)`
+
 
 ```ts
 const result = await gotenberg.convertToPdfa({
@@ -275,7 +412,7 @@ const result = await gotenberg.convertToPdfa({
 });
 ```
 
-## Error handling
+## Error Handling
 
 ```ts
 const result = await gotenberg.version();
@@ -287,3 +424,38 @@ if (!result.ok) {
 
 console.log("ready");
 ```
+
+## Development
+
+```bash
+bun install
+bun run format
+bun test
+bun run build
+```
+
+
+## Deploy Your Own Gotenberg Server
+
+You must run your own Gotenberg instance and point `GOTENBERG_URL` to it.
+
+### Docker example
+
+```bash
+docker run --rm -p 3000:3000 gotenberg/gotenberg:8
+```
+
+### Docker with basic auth reverse proxy
+
+Use a reverse proxy (for example Nginx, Caddy, Traefik) in front of Gotenberg and enforce basic auth there. Then set:
+
+- `GOTENBERG_URL` to proxy URL
+- `GOTENBERG_API_BASIC_AUTH_USERNAME` to proxy username
+- `GOTENBERG_API_BASIC_AUTH_PASSWORD` to proxy password
+
+### Production deployment notes
+
+- keep Gotenberg inside a public/private network is fine either case - as long as you set the username and password within the environment
+- set request size/time limits at gateway level
+- monitor CPU and memory because Chromium and LibreOffice conversions are workload-heavy
+- run multiple replicas behind a load balancer for high-throughput conversion workloads
