@@ -2,6 +2,8 @@ import { expect } from "bun:test";
 
 import type { GotenbergError, Result } from "../../src/types";
 
+type MockFetchInput = string | URL | Request;
+
 type MockFetchHandler = (
    request: Request,
 ) => Response | Promise<Response>;
@@ -11,8 +13,9 @@ export const withMockedFetch = (handler: MockFetchHandler) => {
 
    Object.defineProperty(globalThis, "fetch", {
       configurable: true,
-      value: (input: RequestInfo | URL, init?: RequestInit) => {
-         return Promise.resolve(handler(new Request(input, init)));
+      value: (input: MockFetchInput, init?: RequestInit) => {
+         const request = input instanceof Request ? input : new Request(String(input), init);
+         return Promise.resolve(handler(request));
       },
    });
 

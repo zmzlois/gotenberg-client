@@ -88,15 +88,15 @@ export class Gotenberg extends GotenbergRequestClient {
     return this.withErrorLogging("version", () => super.version(signal));
   }
 
-  override async urlToPdf(input: ConvertUrlInput): ReturnType<GotenbergClient["convertUrl"]> {
+  async urlToPdf(input: ConvertUrlInput): ReturnType<GotenbergClient["convertUrl"]> {
     return this.withErrorLogging("urlToPdf", () => super.convertUrl(input));
   }
 
-  override async htmlToPdf(input: ConvertHtmlInput): ReturnType<GotenbergClient["convertHtml"]> {
+  async htmlToPdf(input: ConvertHtmlInput): ReturnType<GotenbergClient["convertHtml"]> {
     return this.withErrorLogging("htmlToPdf", () => super.convertHtml(input));
   }
 
-  override async markdownToPdf(
+  async markdownToPdf(
     input: ConvertMarkdownInput,
   ): ReturnType<GotenbergClient["convertMarkdown"]> {
     return this.withErrorLogging("markdownToPdf", () => super.convertMarkdown(input));
@@ -124,25 +124,25 @@ export class Gotenberg extends GotenbergRequestClient {
     );
   }
 
-  override async pdfToImage(
+  async pdfToImage(
     input: ScreenshotUrlInput,
   ): ReturnType<GotenbergClient["screenshotUrl"]> {
     return this.withErrorLogging("pdfToImage", () => super.screenshotUrl(input));
   }
 
-  override async officeToPdf(
+  async officeToPdf(
     input: ConvertOfficeInput,
   ): ReturnType<GotenbergClient["convertOffice"]> {
     return this.withErrorLogging("officeToPdf", () => super.convertOffice(input));
   }
 
-  override async excelToPdf(
+  async excelToPdf(
     input: ConvertOfficeInput,
   ): ReturnType<GotenbergClient["convertOffice"]> {
     return this.withErrorLogging("excelToPdf", () => super.convertOffice(input));
   }
 
-  override async wordToPdf(
+  async wordToPdf(
     input: ConvertOfficeInput,
   ): ReturnType<GotenbergClient["convertOffice"]> {
     return this.withErrorLogging("wordToPdf", () => super.convertOffice(input));
