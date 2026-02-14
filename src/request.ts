@@ -193,7 +193,7 @@ type RequestInput = {
   path: string;
   method?: "GET" | "POST";
   headers?: Record<string, string>;
-  body?: BodyInit;
+  body?: RequestInit["body"];
   trace?: string;
   outputFilename?: string;
   signal?: AbortSignal;
