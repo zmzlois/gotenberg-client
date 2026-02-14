@@ -1,33 +1,65 @@
 {
-  "name": "gotenberg-client",
-  "module": "dist/index.js",
-  "type": "module",
-  "private": false,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "format": "biome check --write .",
-    "format:code": "biome format --write .",
-    "build": "bunx tsc -p tsconfig.build.json",
-    "typecheck": "bunx tsc -p tsconfig.json --noEmit",
-    "test": "bun test"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
-    "@types/bun": "latest",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+   "name": "gotenberg-client",
+   "description": "TypeScript client for the Gotenberg document conversion API.",
+   "version": "0.0.1",
+   "keywords": [
+      "gotenberg",
+      "typescript",
+      "api-client",
+      "pdf",
+      "conversion"
+   ],
+   "module": "dist/index.js",
+   "type": "module",
+   "private": false,
+   "author": {
+      "name": "zmzlois",
+      "email": "lois@normal-people.com",
+      "url": "https://github.com/zmzlois",
+      "x": "https://x.com/zmzlois"
+   },
+   "homepage": "https://github.com/zmzlois/gotenberg-client#readme",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/zmzlois/gotenberg-client.git",
+      "directory": "."
+   },
+   "bugs": {
+      "url": "https://github.com/zmzlois/gotenberg-client/issues"
+   },
+   "funding": {
+      "type": "github",
+      "url": "https://github.com/sponsors/zmzlois/dashboard"
+   },
+   "main": "dist/index.js",
+   "types": "dist/index.d.ts",
+   "exports": {
+      ".": {
+         "import": "./dist/index.js",
+         "types": "./dist/index.d.ts"
+      }
+   },
+   "files": [
+      "dist",
+      "README.md"
+   ],
+   "scripts": {
+      "format": "biome check --write .",
+      "format:code": "biome format --write .",
+      "build": "bunx tsc -p tsconfig.build.json",
+      "typecheck": "bunx tsc -p tsconfig.json --noEmit",
+      "test": "bun test"
+   },
+   "publishConfig": {
+      "access": "public",
+      "provenance": true
+   },
+   "devDependencies": {
+      "@biomejs/biome": "^2.0.0",
+      "@types/bun": "latest",
+      "typescript": "^5"
+   },
+   "peerDependencies": {
+      "typescript": "^5"
+   }
 }
