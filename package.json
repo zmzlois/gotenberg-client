@@ -1,7 +1,7 @@
 {
    "name": "gotenberg-client",
    "description": "TypeScript client for the Gotenberg document conversion API.",
-   "version": "0.0.1",
+   "version": "0.0.2",
    "keywords": [
       "gotenberg",
       "typescript",
@@ -9,6 +9,7 @@
       "pdf",
       "conversion"
    ],
+   "license": "MIT",
    "module": "dist/index.js",
    "type": "module",
    "private": false,
@@ -41,7 +42,8 @@
    },
    "files": [
       "dist",
-      "README.md"
+      "README.md",
+      "LICENSE"
    ],
    "scripts": {
       "format": "biome check --write .",

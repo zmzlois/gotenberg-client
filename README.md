@@ -1,6 +1,8 @@
 # gotenberg-client
 
-Typed, promise-based wrapper for [Gotenberg](https://gotenberg.dev/) with a single public class: `Gotenberg`.
+Typed, promise-based wrapper for [Project Gotenberg](https://gotenberg.dev/). 
+
+> You will have to deploy your own Gotenberg server to use this package.
 
 - Minimal surface: one entrypoint, one initialization model.
 - Strong request typing built from shared interfaces in `src/types.ts`.
@@ -41,7 +43,6 @@ Typed, promise-based wrapper for [Gotenberg](https://gotenberg.dev/) with a sing
 - [Converting to PDF/A](#converting-to-pdfa)
 - [Error Handling](#error-handling)
 - [Development](#development)
-- [CI Publish to npm](#ci-publish-to-npm)
 - [Deploy Your Own Gotenberg Server](#deploy-your-own-gotenberg-server)
 
 ## Install
@@ -187,7 +188,6 @@ if (result.ok) {
 Gotenberg handles page loading, rendering, and output as PDF, removing browser automation work from your app.
 #### `urlToPdf(input: ConvertUrlInput)`
 
-Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `convertUrl` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.urlToPdf({
@@ -201,8 +201,6 @@ const result = await gotenberg.urlToPdf({
 You can generate HTML from templates in your application and need immediate PDF output and convert dynamic HTML directly without writing temporary files.
 
 #### `htmlToPdf(input: ConvertHtmlInput)`
-
-Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `convertHtml` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.htmlToPdf({
@@ -292,14 +290,11 @@ const result = await gotenberg.officeToPdf({
 
 #### `excelToPdf(input: ConvertOfficeInput)`
 
-Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), delegates to `convertOffice` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.excelToPdf({ files: [/* ... */] });
 ```
 
-Use when: your workflow needs domain naming for spreadsheet processing.  
-Why: explicit naming improves readability and intent in business code.
 
 ### Converting Word to PDF
 
@@ -349,8 +344,6 @@ const result = await gotenberg.flattenPdf({
 ### Encrypting PDFs
 
 #### `encryptPdf(input: EncryptPdfInput)`
-
-Code: wrapper in [`src/gotenberg.ts`](./src/gotenberg.ts), request method `encryptPdf` in [`src/client.ts`](./src/client.ts).
 
 ```ts
 const result = await gotenberg.encryptPdf({
